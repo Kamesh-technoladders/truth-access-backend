@@ -3,6 +3,7 @@ const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const dualEmploymentRoutes = require('./dual-employment-routes');
+const employeeCheckRoutes = require('./employee-check-routes');
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +25,7 @@ app.options('*', cors());
 
 // Mount Dual Employment Check routes
 app.use('/api/dual', dualEmploymentRoutes);
+app.use('/api/employee', employeeCheckRoutes);
 
 // Encryption endpoint (Basic UAN)
 app.post('/encrypt', async (req, res) => {
