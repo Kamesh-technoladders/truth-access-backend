@@ -4,6 +4,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const dualEmploymentRoutes = require('./dual-employment-routes');
 const employeeCheckRoutes = require('./employee-check-routes');
+const uanLookupRoutes = require('./uan-lookup-routes');
+const uanFromAadhar = require('./uan-from-aadhar')
+const aadhaarVerify = require('./aadhaar-verify')
+const panVerify = require('./pan-verify')
+
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +31,10 @@ app.options('*', cors());
 // Mount Dual Employment Check routes
 app.use('/api/dual', dualEmploymentRoutes);
 app.use('/api/employee', employeeCheckRoutes);
+app.use('/api/uan-lookup', uanLookupRoutes);
+app.use('/api/uan-aadhar', uanFromAadhar);
+app.use('/api/aadhaar-verify', aadhaarVerify);
+app.use('/api/pan-verify', panVerify);
 
 // Encryption endpoint (Basic UAN)
 app.post('/encrypt', async (req, res) => {
@@ -97,7 +106,7 @@ app.post('/encrypt', async (req, res) => {
       message: error.message,
       response: error.response ? {
         status: error.response.status,
-        data: typeof error.response.data === 'string' ? error.response.data.slice(0, 100) : response.data,
+        data: typeof error.response.data === 'string' ? error.response.data.slice(0, 100) : error.response.data,
         headers: error.response.headers
       } : null
     });
@@ -173,7 +182,7 @@ app.post('/verify', async (req, res) => {
       message: error.message,
       response: error.response ? {
         status: error.response.status,
-        data: typeof error.response.data === 'string' ? response.data.slice(0, 100) : response.data,
+        data: typeof error.response.data === 'string' ? error.response.data.slice(0, 100) : error.response.data,
         headers: error.response.headers
       } : null
     });
@@ -260,9 +269,14 @@ app.post('/decrypt', async (req, res) => {
       return res.status(500).json({ error: 'Invalid JSON response from TruthScreen' });
     }
 
+    // Return msg if it's a string (error case) or the full response if valid
+    if (typeof data.msg === 'string') {
+      return res.status(200).json({ msg: data.msg, status: data.status ?? 0, transId: data.transId, tsTransId: data.tsTransId });
+    }
+
     if (!data.msg || data.status === undefined || !data.transId) {
       console.error('Missing required fields in TruthScreen response:', data);
-      return res.status(500).json({ error: 'Missing required fields (msg, status, transId) in TruthScreen response' });
+      return res.status(200).json({ msg: data.msg || 'Missing required fields in TruthScreen response', status: data.status ?? 0, transId: data.transId });
     }
 
     return res.status(200).json(data);
@@ -271,7 +285,7 @@ app.post('/decrypt', async (req, res) => {
       message: error.message,
       response: error.response ? {
         status: error.response.status,
-        data: typeof response.data === 'string' ? response.data.slice(0, 100) : response.data,
+        data: typeof error.response.data === 'string' ? error.response.data.slice(0, 100) : error.response.data,
         headers: error.response.headers
       } : null
     });
